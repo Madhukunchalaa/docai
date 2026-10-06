@@ -7,3 +7,4 @@ applications:
   path: .
   services:
     - doc-ai-trial
+    - docai-dest

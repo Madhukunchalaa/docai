@@ -1,23 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head><title>Document AI Demo</title></head>
-<body style="font-family: sans-serif; max-width: 600px; margin: 40px auto;">
+<body style="font-family: sans-serif; max-width: 800px; margin: 40px auto;">
   <h2>SAP Document AI - Invoice Extractor</h2>
   <form id="form">
     <input type="file" id="fileInput" accept="application/pdf" required />
     <button type="submit">Extract</button>
   </form>
-  <pre id="result" style="background:#f4f4f4; padding:10px; white-space:pre-wrap;"></pre>
+
+  <h3>1. Extracted data</h3>
+  <pre id="result" style="background:#f4f4f4; padding:10px; white-space:pre-wrap; max-height:300px; overflow:auto;"></pre>
+
+  <h3>2. S/4HANA payload</h3>
+  <button id="previewBtn" disabled>Build payload</button>
+  <button id="postBtn" disabled>Approve &amp; Post to S/4</button>
+  <pre id="payload" style="background:#eef6ff; padding:10px; white-space:pre-wrap;"></pre>
+
+  <h3>3. S/4 response</h3>
+  <pre id="s4result" style="background:#f4fff4; padding:10px; white-space:pre-wrap;"></pre>
+
   <script>
-    document.getElementById('form').addEventListener('submit', async (e) => {
+    let lastExtraction = null, lastPayload = null;
+    const $ = id => document.getElementById(id);
+
+    $('form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const file = document.getElementById('fileInput').files[0];
       const formData = new FormData();
-      formData.append('file', file);
-      document.getElementById('result').textContent = 'Processing...';
+      formData.append('file', $('fileInput').files[0]);
+      $('result').textContent = 'Processing...';
+      $('payload').textContent = ''; $('s4result').textContent = '';
+      $('postBtn').disabled = true; lastPayload = null;
       const res = await fetch('/extract', { method: 'POST', body: formData });
       const data = await res.json();
-      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+      lastExtraction = data;
+      $('result').textContent = JSON.stringify(data, null, 2);
+      $('previewBtn').disabled = !data.extraction;
+    });
+
+    $('previewBtn').addEventListener('click', async () => {
+      const res = await fetch('/preview-invoice', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ docAi: lastExtraction })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        lastPayload = data.payload;
+        $('payload').textContent = JSON.stringify(data.payload, null, 2);
+        $('postBtn').disabled = false;
+      } else {
+        lastPayload = null; $('postBtn').disabled = true;
+        $('payload').textContent = 'Manual review needed:\n- ' + data.errors.join('\n- ');
+      }
+    });
+
+    $('postBtn').addEventListener('click', async () => {
+      $('postBtn').disabled = true;
+      $('s4result').textContent = 'Posting to S/4...';
+      const res = await fetch('/post-invoice', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload: lastPayload })
+      });
+      $('s4result').textContent = JSON.stringify(await res.json(), null, 2);
     });
   </script>
 </body>
