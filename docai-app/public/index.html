@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><title>Document AI Demo</title></head>
+<body style="font-family: sans-serif; max-width: 600px; margin: 40px auto;">
+  <h2>SAP Document AI - Invoice Extractor</h2>
+  <form id="form">
+    <input type="file" id="fileInput" accept="application/pdf" required />
+    <button type="submit">Extract</button>
+  </form>
+  <pre id="result" style="background:#f4f4f4; padding:10px; white-space:pre-wrap;"></pre>
+  <script>
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('fileInput').files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      document.getElementById('result').textContent = 'Processing...';
+      const res = await fetch('/extract', { method: 'POST', body: formData });
+      const data = await res.json();
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    });
+  </script>
+</body>
+</html>

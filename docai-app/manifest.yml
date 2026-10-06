@@ -1,0 +1,9 @@
+applications:
+- name: docai-app
+  memory: 256M
+  random-route: true
+  buildpacks:
+    - nodejs_buildpack
+  path: .
+  services:
+    - doc-ai-trial
