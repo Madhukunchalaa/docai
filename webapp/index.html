@@ -1,35 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>App Title</title>
-    <style>
-        html, body, body > div, #container, #container-uiarea {
-            height: 100%;
-        }
-    </style>
-    <script
-        id="sap-ui-bootstrap"
-        src="resources/sap-ui-core.js"
-        data-sap-ui-theme="sap_horizon"
-        data-sap-ui-resource-roots='{
-            "docaipp": "./"
-        }'
-        data-sap-ui-on-init="module:sap/ui/core/ComponentSupport"
-        data-sap-ui-compat-version="edge"
-        data-sap-ui-async="true"
-        data-sap-ui-frame-options="trusted"
-    ></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supplier Invoice Automation</title>
+<style>
+  :root { --blue:#0a6ed1; --dark:#354a5f; --bg:#f2f4f7; --line:#d9dde2; --ok:#107e3e; --err:#bb0000; --warn:#e9730c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); font-family:"72","Segoe UI",Arial,sans-serif; color:#32363a; font-size:14px; }
+  header { background:var(--dark); color:#fff; padding:0 24px; height:48px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 4px rgba(0,0,0,.25); }
+  header h1 { font-size:16px; font-weight:600; margin:0; }
+  header span { font-size:12px; opacity:.8; }
+  main { max-width:980px; margin:20px auto; padding:0 16px; }
+  .steps { display:flex; background:#fff; border:1px solid var(--line); border-radius:4px; margin-bottom:16px; }
+  .step { flex:1; padding:12px; text-align:center; font-size:13px; color:#6a6d70; border-right:1px solid var(--line); }
+  .step:last-child { border-right:0; }
+  .step b { display:inline-block; width:22px; height:22px; line-height:22px; border-radius:50%; background:#d9dde2; color:#fff; margin-right:6px; font-size:12px; }
+  .step.active { color:var(--blue); font-weight:600; } .step.active b { background:var(--blue); }
+  .step.done { color:var(--ok); } .step.done b { background:var(--ok); }
+  .step.fail { color:var(--err); } .step.fail b { background:var(--err); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:4px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .card h2 { margin:0; padding:12px 16px; font-size:15px; font-weight:600; border-bottom:1px solid var(--line); background:#fafbfc; }
+  .card .body { padding:16px; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  input[type=file] { border:1px dashed #89919a; padding:8px; background:#fafbfc; border-radius:4px; flex:1; min-width:240px; }
+  button { font-size:14px; padding:7px 18px; border-radius:4px; border:1px solid var(--blue); background:#fff; color:var(--blue); cursor:pointer; font-weight:600; }
+  button.primary { background:var(--blue); color:#fff; }
+  button.primary:hover:not(:disabled) { background:#085caf; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); font-size:13px; }
+  th { background:#f2f4f7; color:#515559; font-weight:600; width:38%; }
+  td.num { text-align:right; font-variant-numeric: tabular-nums; }
+  .msg { padding:10px 14px; border-radius:4px; margin-top:12px; border-left:4px solid; font-size:13px; white-space:pre-wrap; }
+  .msg.ok { background:#f1fdf6; border-color:var(--ok); color:#0b5a2c; }
+  .msg.err { background:#ffefef; border-color:var(--err); color:#7a0000; }
+  .msg.warn { background:#fff6e8; border-color:var(--warn); color:#7a3d00; }
+  .msg.info { background:#eef6ff; border-color:var(--blue); color:#0a4a8c; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:760px){ .grid{grid-template-columns:1fr;} .steps{flex-direction:column;} }
+  details summary { cursor:pointer; color:var(--blue); font-size:13px; padding:8px 0; }
+  pre { background:#f7f7f7; padding:10px; border-radius:4px; overflow:auto; max-height:280px; font-size:12px; margin:0; }
+  label.chk { font-size:13px; color:#515559; display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .seg { display:inline-flex; } .seg button { border-radius:0; } .seg button:first-child { border-radius:4px 0 0 4px; } .seg button:last-child { border-radius:0 4px 4px 0; margin-left:-1px; }
+  .seg button.on { background:var(--blue); color:#fff; }
+  #poFields input { border:1px solid #89919a; padding:8px; border-radius:4px; flex:1; min-width:120px; font-size:14px; }
+  .big { font-size:22px; font-weight:600; }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid #cfd6dd; border-top-color:var(--blue); border-radius:50%; animation:sp .8s linear infinite; vertical-align:-2px; margin-right:6px; }
+  @keyframes sp { to { transform:rotate(360deg);} }
+</style>
 </head>
-<body class="sapUiBody sapUiSizeCompact" id="content">
-    <div
-        data-sap-ui-component
-        data-name="docaipp"
-        data-id="container"
-        data-settings='{"id" : "docaipp"}'
-        data-handle-validation="true"
-    ></div>
+<body>
+<header><h1>Supplier Invoice Automation</h1><span>SAP Document AI &rarr; S/4HANA</span></header>
+<main>
+
+  <div class="steps">
+    <div class="step active" id="st1"><b>1</b>Upload</div>
+    <div class="step" id="st2"><b>2</b>Extract</div>
+    <div class="step" id="st3"><b>3</b>Validate</div>
+    <div class="step" id="st4"><b>4</b>Post to S/4</div>
+  </div>
+
+  <div class="card">
+    <h2>Upload Invoice</h2>
+    <div class="body">
+      <div class="row" style="margin-bottom:12px">
+        <div class="seg">
+          <button type="button" id="modeNonPo" class="on">Non-PO Invoice</button>
+          <button type="button" id="modePo">With PO</button>
+        </div>
+      </div>
+      <div class="row" id="poFields" style="display:none;margin-bottom:12px">
+        <input type="text" id="poNumber" placeholder="PO number (auto from invoice)">
+        <input type="text" id="poItem" placeholder="PO item (auto)" style="max-width:90px">
+        <input type="text" id="poQty" placeholder="Qty" style="max-width:90px">
+        <input type="text" id="poUnit" placeholder="Unit (blank = PO unit)" style="max-width:150px">
+        <input type="text" id="poRefDoc" placeholder="GR doc (e.g. 5001027022)">
+        <input type="text" id="poRefYear" placeholder="GR year" style="max-width:90px">
+        <input type="text" id="poRefItem" placeholder="GR item" style="max-width:90px">
+      </div>
+      <form id="form" class="row">
+        <input type="file" id="fileInput" accept="application/pdf" required>
+        <button class="primary" type="submit" id="extractBtn">Extract</button>
+      </form>
+      <div id="extractMsg"></div>
+    </div>
+  </div>
+
+  <div class="card" id="extractedCard" style="display:none">
+    <h2>Extracted Data</h2>
+    <div class="body">
+      <table id="fieldsTbl"><tbody></tbody></table>
+      <details><summary>Show raw Document AI JSON</summary><pre id="raw"></pre></details>
+    </div>
+  </div>
+
+  <div class="card" id="payloadCard" style="display:none">
+    <h2>S/4HANA Posting</h2>
+    <div class="body">
+      <div id="validation"></div>
+      <div class="grid" id="summaryGrid" style="display:none">
+        <table id="hdrTbl"><tbody></tbody></table>
+        <table id="itmTbl"><tbody></tbody></table>
+      </div>
+      <details id="payloadDetails" style="display:none"><summary>Show S/4 payload (JSON)</summary><pre id="payload"></pre></details>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="postBtn" disabled>Submit to S/4</button>
+        <label class="chk"><input type="checkbox" id="autoChk"> Auto-submit when validation passes</label>
+      </div>
+      <div id="s4Msg"></div>
+    </div>
+  </div>
+
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  let lastExtraction = null, lastPayload = null, mode = 'NONPO';
+  const poData = () => ({ number: $('poNumber').value, item: $('poItem').value, qty: $('poQty').value, unit: $('poUnit').value, refDoc: $('poRefDoc').value, refYear: $('poRefYear').value, refItem: $('poRefItem').value });
+  const PO_IDS = ['poNumber','poItem','poQty','poUnit','poRefDoc','poRefYear','poRefItem'];
+  PO_IDS.forEach(i => $(i).addEventListener('input', () => { delete $(i).dataset.auto; }));
+  function autoFill(it) {
+    const vals = { poNumber: it.PurchaseOrder, poItem: it.PurchaseOrderItem, poQty: it.QuantityInPurchaseOrderUnit,
+      poRefDoc: it.ReferenceDocument, poRefYear: it.ReferenceDocumentFiscalYear, poRefItem: it.ReferenceDocumentItem };
+    Object.entries(vals).forEach(([id, v]) => { const el = $(id); if (v && (!el.value || el.dataset.auto)) { el.value = v; el.dataset.auto = '1'; } });
+  }
+  function setMode(m) {
+    mode = m;
+    $('modeNonPo').classList.toggle('on', m === 'NONPO'); $('modePo').classList.toggle('on', m === 'PO');
+    $('poFields').style.display = m === 'PO' ? '' : 'none';
+    document.querySelector('header span').textContent = (m === 'PO' ? 'PO-based' : 'Non-PO') + ' \u00b7 SAP Document AI \u2192 S/4HANA';
+    if (lastExtraction && lastExtraction.extraction) buildPayload();
+  }
+  $('modeNonPo').onclick = () => setMode('NONPO'); $('modePo').onclick = () => setMode('PO');
+  ['poNumber','poItem','poQty','poUnit','poRefDoc','poRefYear','poRefItem'].forEach(i => $(i).addEventListener('change', () => { if (mode === 'PO' && lastExtraction && lastExtraction.extraction) buildPayload(); }));
+
+  const setStep = (n, state) => { const e = $('st'+n); e.className = 'step ' + state; };
+  const resetSteps = () => { [1,2,3,4].forEach(i => setStep(i, i===1 ? 'active' : '')); };
+  function msg(el, cls, text, spinner) {
+    el.innerHTML = '';
+    const d = document.createElement('div'); d.className = 'msg ' + cls;
+    if (spinner) { const s = document.createElement('span'); s.className = 'spinner'; d.appendChild(s); }
+    d.appendChild(document.createTextNode(text)); el.appendChild(d);
+  }
+  function fillTable(tbl, rows) {
+    const tb = tbl.querySelector('tbody'); tb.innerHTML = '';
+    rows.forEach(([k, v]) => {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th'); th.textContent = k;
+      const td = document.createElement('td'); td.textContent = v === undefined || v === null ? '' : v;
+      tr.append(th, td); tb.appendChild(tr);
+    });
+  }
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const file = $('fileInput').files[0]; if (!file) return;
+    PO_IDS.forEach(i => { if ($(i).dataset.auto) { $(i).value = ''; delete $(i).dataset.auto; } });
+    resetSteps(); setStep(1,'done'); setStep(2,'active');
+    ['extractedCard','payloadCard'].forEach(i => $(i).style.display='none');
+    $('postBtn').disabled = true; lastPayload = null; $('s4Msg').innerHTML = '';
+    $('extractBtn').disabled = true;
+    msg($('extractMsg'), 'info', 'Extracting data with SAP Document AI...', true);
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const res = await fetch('/extract', { method:'POST', body: fd });
+      const data = await res.json();
+      lastExtraction = data;
+      $('raw').textContent = JSON.stringify(data, null, 2);
+      if (!data.extraction) { setStep(2,'fail'); msg($('extractMsg'), 'err', data.message || data.error && JSON.stringify(data.error) || 'Extraction failed'); return; }
+      setStep(2,'done'); $('extractMsg').innerHTML = '';
+      const rows = (data.extraction.headerFields || []).map(f => [f.name, f.value + (f.confidence ? '   (confidence ' + Math.round(f.confidence*100) + '%)' : '')]);
+      fillTable($('fieldsTbl'), rows);
+      $('extractedCard').style.display = '';
+      await buildPayload();
+    } catch (err) {
+      setStep(2,'fail'); msg($('extractMsg'), 'err', 'Error: ' + err.message);
+    } finally { $('extractBtn').disabled = false; }
+  });
+
+  async function buildPayload() {
+    setStep(3,'active'); $('payloadCard').style.display = '';
+    $('summaryGrid').style.display = 'none'; $('payloadDetails').style.display = 'none';
+    msg($('validation'), 'info', 'Validating and building S/4 payload...', true);
+    const res = await fetch('/preview-invoice', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ docAi: lastExtraction, mode, po: poData() }) });
+    const data = await res.json();
+    if (!data.ok) {
+      setStep(3,'fail'); lastPayload = null; $('postBtn').disabled = true;
+      msg($('validation'), 'warn', 'Manual review needed:\n- ' + data.errors.join('\n- '));
+      return;
+    }
+    lastPayload = data.payload; setStep(3,'done');
+    const p = data.payload, isPo = !!p.to_SuplrInvcItemPurOrdRef, it = isPo ? p.to_SuplrInvcItemPurOrdRef[0] : p.to_SupplierInvoiceItemGLAcct[0];
+    fillTable($('hdrTbl'), [['Company Code',p.CompanyCode],['Supplier',p.InvoicingParty],['Invoice No.',p.SupplierInvoiceIDByInvcgParty],
+      ['Invoice Date',(p.DocumentDate||'').slice(0,10)],['Posting Date',(p.PostingDate||'').slice(0,10)],['Currency',p.DocumentCurrency],['Gross Amount',p.InvoiceGrossAmount]]);
+    fillTable($('itmTbl'), isPo
+      ? [['PO Number',it.PurchaseOrder],['PO Item',it.PurchaseOrderItem],['Quantity',(it.QuantityInPurchaseOrderUnit||'-') + ' ' + (it.PurchaseOrderQuantityUnit||'')],['GR Reference',(it.ReferenceDocument||'-') + ' / ' + (it.ReferenceDocumentFiscalYear||'') + ' / ' + (it.ReferenceDocumentItem||'')],['Tax Code',it.TaxCode],['Net Amount',it.SupplierInvoiceItemAmount]]
+      : [['G/L Account',it.GLAccount],['Cost Center',it.CostCenter],['Tax Code',it.TaxCode],['Net Amount',it.SupplierInvoiceItemAmount],['Debit/Credit',it.DebitCreditCode]]);
+    if (isPo) autoFill(it);
+    $('summaryGrid').style.display = ''; $('payloadDetails').style.display = '';
+    $('payload').textContent = JSON.stringify(p, null, 2);
+    msg($('validation'), 'ok', 'Validation passed. Ready to post to S/4HANA.' + ((data.info && data.info.length) ? '\n' + data.info.join('\n') : ''));
+    $('postBtn').disabled = false;
+    if ($('autoChk').checked) await postInvoice();
+  }
+
+  async function postInvoice() {
+    if (!lastPayload) return;
+    $('postBtn').disabled = true; setStep(4,'active');
+    msg($('s4Msg'), 'info', 'Posting to S/4HANA...', true);
+    try {
+      const res = await fetch('/post-invoice', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ payload: lastPayload }) });
+      const d = await res.json();
+      if (d.ok) {
+        setStep(4,'done');
+        const box = $('s4Msg'); box.innerHTML = '';
+        const m = document.createElement('div'); m.className = 'msg ok';
+        const t = document.createElement('div'); t.className = 'big'; t.textContent = 'Invoice posted: ' + d.supplierInvoice + ' / ' + d.fiscalYear;
+        const s = document.createElement('div'); s.textContent = 'S/4 supplier invoice document number and fiscal year.';
+        m.append(t, s); box.appendChild(m);
+      } else {
+        setStep(4,'fail'); msg($('s4Msg'), 'err', 'S/4 error: ' + (d.error || 'Unknown error')); $('postBtn').disabled = false;
+      }
+    } catch (err) {
+      setStep(4,'fail'); msg($('s4Msg'), 'err', 'Error: ' + err.message); $('postBtn').disabled = false;
+    }
+  }
+  $('postBtn').addEventListener('click', postInvoice);
+</script>
 </body>
 </html>
